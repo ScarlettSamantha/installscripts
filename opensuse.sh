@@ -13,6 +13,7 @@ sudo zypper ar https://download.opensuse.org/repositories/devel:/languages:/php:
 sudo zypper ar https://download.opensuse.org/repositories/devel:/languages:/php:/php83/openSUSE_Leap_15.5/ php83
 sudo zypper ar -f https://download.opensuse.org/repositories/hardware:/sdr/openSUSE_Leap_15.5/hardware:sdr.repo sdr
 sudo zypper ar https://packages.microsoft.com/sles/15/prod microsoft_prod
+sudo zypper ar https://download.opensuse.org/repositories/KDE:/Qt6/openSUSE_Leap_15.5/ qt6
 sudo zypper --gpg-auto-import-keys ref
 
 # Refresh repositories
@@ -23,11 +24,11 @@ sudo zypper -n refresh
 echo "Installing development tools and utilities..."
 sudo zypper install -yn gcc gcc-c++ cmake make git git-core git-lfs \
 python3-pip python3-virtualenv nodejs16 \
-dotnet-sdk-6.0 mono-devel qt6-base \
+dotnet-sdk-6.0 mono-devel qt6-core-devel \
 docker docker-compose virtualbox virtualbox-qt wine winetricks keepassxc \
 btop nvtop radeontop i2c-tools inxi unar unrar zstd p7zip \
 yt-dlp aria2 pigz wireshark nmap john tcpdump net-tools \
-libreoffice ffmpeg gstreamer php83 php83-json
+libreoffice ffmpeg gstreamer php8 php8-pdo php8-memcached php8-posix php8-soap php8-sodium php8-xdebug php8-intl php8-imagick php8-iconv php8-gmp php8-iconv php8-curl php8-devel php8-dom php8-bz2 php8-cli php8-ctype
 
 # Note: Some packages may not be available in Leap 15.5 and are commented out
 # Removed packages: git-extras, castxml, bpftrace, copyq, bladerf, hackrf, soapysdr, rtl_433, rtl-sdr, cryfs
