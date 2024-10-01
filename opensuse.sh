@@ -8,12 +8,11 @@ sudo zypper -n refresh
 echo "Adding necessary repositories..."
 
 # devel:languages:python for multiple Python versions
-sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Leap_15.5/
-sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php74/openSUSE_Leap_15.5/ php74
-sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php82/openSUSE_Leap_15.5/ php82
-sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php83/openSUSE_Leap_15.5/ php83
-sudo zypper ar -f https://download.opensuse.org/repositories/hardware:/sdr/openSUSE_Leap_15.5/hardware:sdr.repo
-sudo zypper ar -f https://packages.microsoft.com/sles/15/prod
+sudo zypper ar https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Leap_15.5/
+sudo zypper ar https://download.opensuse.org/repositories/devel:/languages:/php:/php74/openSUSE_Leap_15.5/ php74
+sudo zypper ar https://download.opensuse.org/repositories/devel:/languages:/php:/php83/openSUSE_Leap_15.5/ php83
+sudo zypper ar -f https://download.opensuse.org/repositories/hardware:/sdr/openSUSE_Leap_15.5/hardware:sdr.repo sdr
+sudo zypper ar https://packages.microsoft.com/sles/15/prod microsoft_prod
 sudo zypper --gpg-auto-import-keys ref
 
 # Refresh repositories
@@ -24,11 +23,11 @@ sudo zypper -n refresh
 echo "Installing development tools and utilities..."
 sudo zypper install -yn gcc gcc-c++ cmake make git git-core git-lfs \
 python3-pip python3-virtualenv nodejs16 \
-dotnet-sdk-6.0 mono-devel qt6-devel python310-qt6-devel \
+dotnet-sdk-6.0 mono-devel qt6-base \
 docker docker-compose virtualbox virtualbox-qt wine winetricks keepassxc \
 btop nvtop radeontop i2c-tools inxi unar unrar zstd p7zip \
 yt-dlp aria2 pigz wireshark nmap john tcpdump net-tools \
-libreoffice ffmpeg gstreamer php83 php83-xml php83-json php82 php82-xml php82-json
+libreoffice ffmpeg gstreamer php83 php83-json
 
 # Note: Some packages may not be available in Leap 15.5 and are commented out
 # Removed packages: git-extras, castxml, bpftrace, copyq, bladerf, hackrf, soapysdr, rtl_433, rtl-sdr, cryfs
