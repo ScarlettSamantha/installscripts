@@ -11,8 +11,8 @@ echo "Adding necessary repositories..."
 sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Leap_15.5/devel:languages:python.repo
 sudo rpm --import https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Leap_15.5/repodata/repomd.xml.key
 
-sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php83/openSUSE_Leap_15.5/devel:languages:php:php74.repo
-sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php83/openSUSE_Leap_15.5/devel:languages:php:php82.repo
+sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php74/openSUSE_Leap_15.5/devel:languages:php:php74.repo
+sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php82/openSUSE_Leap_15.5/devel:languages:php:php82.repo
 sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php83/openSUSE_Leap_15.5/devel:languages:php:php83.repo
 sudo rpm --import https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Leap_15.5/repodata/repomd.xml.key
 
@@ -35,7 +35,7 @@ dotnet-sdk-6.0 mono-devel qt6-devel python310-qt6-devel \
 docker docker-compose virtualbox virtualbox-qt wine winetricks keepassxc \
 btop nvtop radeontop i2c-tools inxi unar unrar zstd p7zip \
 yt-dlp aria2 pigz wireshark nmap john tcpdump net-tools \
-libreoffice ffmpeg gstreamer
+libreoffice ffmpeg gstreamer php83 php83-xml php83-json php82 php82-xml php82-json
 
 # Note: Some packages may not be available in Leap 15.5 and are commented out
 # Removed packages: git-extras, castxml, bpftrace, copyq, bladerf, hackrf, soapysdr, rtl_433, rtl-sdr, cryfs
