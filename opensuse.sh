@@ -11,8 +11,10 @@ echo "Adding necessary repositories..."
 sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Leap_15.5/devel:languages:python.repo
 sudo rpm --import https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Leap_15.5/repodata/repomd.xml.key
 
-sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php/openSUSE_Leap_15.5/devel:languages:php.repo
-sudo rpm --import https://download.opensuse.org/repositories/devel:/languages:/php/openSUSE_Leap_15.5/repodata/repomd.xml.key
+sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php83/openSUSE_Leap_15.5/devel:languages:php:php74.repo
+sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php83/openSUSE_Leap_15.5/devel:languages:php:php82.repo
+sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php83/openSUSE_Leap_15.5/devel:languages:php:php83.repo
+sudo rpm --import https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Leap_15.5/repodata/repomd.xml.key
 
 # hardware:sdr for SDR packages (if available)
 sudo zypper ar -f https://download.opensuse.org/repositories/hardware:/sdr/openSUSE_Leap_15.5/hardware:sdr.repo
