@@ -9,19 +9,12 @@ echo "Adding necessary repositories..."
 
 # devel:languages:python for multiple Python versions
 sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Leap_15.5/
-sudo rpm --import https://download.opensuse.org/repositories/devel:/languages:/python/openSUSE_Leap_15.5/repodata/repomd.xml.key
-
 sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php74/openSUSE_Leap_15.5/ php74
 sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php82/openSUSE_Leap_15.5/ php82
 sudo zypper ar -f https://download.opensuse.org/repositories/devel:/languages:/php:/php83/openSUSE_Leap_15.5/ php83
-sudo rpm --import https://download.opensuse.org/repositories/devel:/languages:/php/openSUSE_Leap_15.5/repodata/repomd.xml.key
-
-# hardware:sdr for SDR packages (if available)
 sudo zypper ar -f https://download.opensuse.org/repositories/hardware:/sdr/openSUSE_Leap_15.5/hardware:sdr.repo
-
-# Microsoft's repository for dotnet-sdk-8.0
-sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-sudo zypper ar -f https://packages.microsoft.com/config/opensuse/15/prod.repo microsoft-prod
+sudo zypper ar -f https://packages.microsoft.com/sles/15/prod
+sudo zypper --gpg-auto-import-keys ref
 
 # Refresh repositories
 echo "Refreshing repositories..."
