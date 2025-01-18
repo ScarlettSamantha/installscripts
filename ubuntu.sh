@@ -17,14 +17,8 @@ set_governor() {
     done
 }
 
-# Check and set the governor
-if grep -q "ondemand" /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors; then
-    echo "Setting CPU governor to 'ondemand'"
-    set_governor "ondemand"
-else
-    echo "'ondemand' not available, setting CPU governor to 'performance'"
-    set_governor "performance"
-fi
+echo "'ondemand' not available, setting CPU governor to 'performance'"
+set_governor "performance"
 
 # Enable Turbo Boost for Intel and AMD
 enable_turbo_boost() {
@@ -106,26 +100,6 @@ detect_gpu() {
         install_gpu_tools "amd"
     else
         echo "✅ No NVIDIA or AMD GPU detected."
-    fi
-}
-
-# Function to install GPU monitoring tools
-install_gpu_tools() {
-    local gpu_type=$1
-    if [ "$gpu_type" = "nvidia" ]; then
-        if ! command -v nvidia-smi &> /dev/null; then
-            echo "📦 Installing NVIDIA drivers and nvidia-smi..."
-            sudo $PACKAGE_MANAGER install -y nvidia-driver-470 nvidia-smi
-        else
-            echo "✅ nvidia-smi is already installed."
-        fi
-    elif [ "$gpu_type" = "amd" ]; then
-        if ! command -v radeontop &> /dev/null; then
-            echo "📦 Installing radeontop for AMD GPU monitoring..."
-            sudo $PACKAGE_MANAGER install -y radeontop
-        else
-            echo "✅ radeontop is already installed."
-        fi
     fi
 }
 
@@ -300,7 +274,7 @@ sudo flatpak install dev.geopjr.Calligraphy --assumeyes
 sudo flatpak install io.gitlab.adhami3310.Impression --assumeyes
 sudo flatpak install net.mkiol.Jupii --assumeyes
 sudo flatpak install io.github.amit9838.mousam --assumeyes
-sudo flatpak intsall org.kde.audiotube --assumeyes
+sudo flatpak install org.kde.audiotube --assumeyes
 sudo flatpak install io.github.realmazharhussain.GdmSettings --assumeyes
 sudo flatpak install hu.irl.cameractrls --assumeyes
 sudo flatpak install io.gitlab.leesonwai.Sums --assumeyes 
@@ -312,7 +286,7 @@ sudo flatpak install org.gnome.Firmware --assumeyes
 
 # Displaying sensor readings
 echo "📊 Displaying sensor readings..."
-sudo sensors
+sudo sensors-detect
 
 echo "⚙️ Setting CPU performance governor to 🏎️ 'ondemand' and if not available 🔋 'performance'"
 enable_turbo_boost
