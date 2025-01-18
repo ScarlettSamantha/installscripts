@@ -40,6 +40,42 @@ if [ "$PACKAGE_MANAGER" = "apt" ]; then
     fi
 fi
 
+# Function to detect GPU type
+detect_gpu() {
+    if lspci | grep -i 'nvidia' &> /dev/null; then
+        echo "⚠️ NVIDIA GPU detected."
+        install_gpu_tools "nvidia"
+    elif lspci | grep -i 'amd' | grep -i 'vga' &> /dev/null; then
+        echo "⚠️ AMD GPU detected."
+        install_gpu_tools "amd"
+    else
+        echo "✅ No NVIDIA or AMD GPU detected."
+    fi
+}
+
+# Function to install GPU monitoring tools
+install_gpu_tools() {
+    local gpu_type=$1
+    if [ "$gpu_type" = "nvidia" ]; then
+        if ! command -v nvidia-smi &> /dev/null; then
+            echo "📦 Installing NVIDIA drivers and nvidia-smi..."
+            sudo $PACKAGE_MANAGER install -y nvidia-driver-470 nvidia-smi
+        else
+            echo "✅ nvidia-smi is already installed."
+        fi
+    elif [ "$gpu_type" = "amd" ]; then
+        if ! command -v radeontop &> /dev/null; then
+            echo "📦 Installing radeontop for AMD GPU monitoring..."
+            sudo $PACKAGE_MANAGER install -y radeontop
+        else
+            echo "✅ radeontop is already installed."
+        fi
+    fi
+}
+
+# Detect and install GPU monitoring tools
+detect_gpu
+
 # Adding i386 architecture support
 echo "🔄 Adding i386 architecture support..."
 sudo dpkg --add-architecture i386
@@ -122,6 +158,9 @@ sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo $PACKAGE_MANAGER ins
 
 sudo $PACKAGE_MANAGER install -y lm-sensors 
 
+echo "🔥 Installing stress testing utilities..."
+sudo $PACKAGE_MANAGER install -y s-tui stress
+
 # Install email client
 echo "Installing gnome packages"
 # Gnome Flatpaks
@@ -156,8 +195,8 @@ echo "🔄 Pinning apps to the KDE 6 taskbar..."
 
 # Final system update and upgrade
 echo "🔄 Final system update and upgrade..."        
-sudo $PACKAGE_MANAGER update -y
-sudo $PACKAGE_MANAGER upgrade
+sudo $PACKAGE_MANAGER update
+sudo $PACKAGE_MANAGER upgrade -y
 
 # Enabling TRIM support on NVMe
 echo "✂️ Enabling TRIM support on NVMe..."
@@ -170,6 +209,12 @@ rm -f /tmp/discord.deb /tmp/openrgb.deb /tmp/google-chrome-stable_current_amd64.
 
 echo "⚙️ Enable services"
 sudo systemctl enable --now snapd docker
+
+echo "🔍 Detecting hardware sensors..."
+yes | sudo sensors-detect --auto
+
+echo "🔄 Reloading sensor modules..."
+sudo systemctl restart systemd-modules-load.service
 
 # Displaying completion message with Zenity
 zenity --info --width=800 --height=400 --title="Installation Complete" \
@@ -189,5 +234,9 @@ else
     zenity --info --width=300 --height=100 --title="Reboot Skipped" \
            --text="❌ Reboot skipped. Please reboot manually later."
 fi
+
+# Displaying sensor readings
+echo "📊 Displaying sensor readings..."
+sensors
 
 echo "✅ Installation and setup complete!"
