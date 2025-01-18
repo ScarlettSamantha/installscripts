@@ -129,11 +129,11 @@ append_launcher() {
 }
 
 echo "🔄 Pinning apps to the KDE 6 taskbar..."
-append_launcher spotify_spotify.desktop
-append_launcher steam.desktop       
-append_launcher discord.desktop
-append_launcher org.kde.krita.desktop
-append_launcher com.obsproject.Studio.desktop
+#append_launcher spotify_spotify.desktop
+#append_launcher steam.desktop       
+#append_launcher discord.desktop
+#append_launcher org.kde.krita.desktop
+#append_launcher com.obsproject.Studio.desktop
 
 # Final system update and upgrade
 echo "🔄 Final system update and upgrade..."
