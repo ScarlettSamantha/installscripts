@@ -75,8 +75,11 @@ sudo snap install spotify
 # Installing Discord
 echo "💬 Installing Discord..."
 cd /tmp
-wget -q -O discord.deb "https://discord.com/api/download?platform=linux&format=deb"
-sudo dpkg -i discord.deb || sudo $PACKAGE_MANAGER install -f -y
+if wget -q -O discord.deb "https://discord.com/api/download?platform=linux&format=deb"; then
+    sudo dpkg -i discord.deb || sudo $PACKAGE_MANAGER install -f -y
+else
+    echo "❌ Failed to download Discord. Skipping installation."
+fi
 
 # Installing OpenRGB
 echo "💬 Installing OpenRGB..."
@@ -117,6 +120,8 @@ cd /tmp
 wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo $PACKAGE_MANAGER install -f -y
 
+sudo $PACKAGE_MANAGER install -y lm-sensors 
+
 # Install email client
 echo "Installing gnome packages"
 # Gnome Flatpaks
@@ -150,9 +155,21 @@ echo "🔄 Pinning apps to the KDE 6 taskbar..."
 #append_launcher com.obsproject.Studio.desktop
 
 # Final system update and upgrade
-echo "🔄 Final system update and upgrade..."
+echo "🔄 Final system update and upgrade..."        
 sudo $PACKAGE_MANAGER update -y
-sudo $PACKAGE_MANAGER upgrade -y
+sudo $PACKAGE_MANAGER upgrade
+
+# Enabling TRIM support on NVMe
+echo "✂️ Enabling TRIM support on NVMe..."
+sudo systemctl enable --now fstrim.timer
+sudo systemctl is-active --quiet fstrim.timer && echo "✂️ TRIM is active." || echo "❌ Failed to enable TRIM."
+
+
+echo "🧹 Cleanup of temp files"
+rm -f /tmp/discord.deb /tmp/openrgb.deb /tmp/google-chrome-stable_current_amd64.deb
+
+echo "⚙️ Enable services"
+sudo systemctl enable --now snapd docker
 
 # Displaying completion message with Zenity
 zenity --info --width=800 --height=400 --title="Installation Complete" \
@@ -165,7 +182,7 @@ REBOOT_CHOICE=$(zenity --question --width=800 --height=600 \
     --ok-label="Reboot" \
     --cancel-label="Later")
 
-if [ $? -eq 0 ]; then
+if [ "$REBOOT_CHOICE" -eq 0 ]; then
     echo "🔄 Rebooting the system..."
     reboot
 else
