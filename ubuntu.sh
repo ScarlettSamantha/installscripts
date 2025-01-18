@@ -3,6 +3,66 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
+sudo mkdir -p /etc/apt/keyrings
+export DEBIAN_FRONTEND=noninteractive
+export MESA_NO_AVX512=1
+
+# Function to set CPU governor
+set_governor() {
+    local gov=$1
+    for cpu in /sys/devices/system/cpu/cpu[0-9]*/cpufreq/scaling_governor; do
+        if [ -f "$cpu" ]; then
+            echo "$gov" | sudo tee "$cpu" > /dev/null
+        fi
+    done
+}
+
+# Check and set the governor
+if grep -q "ondemand" /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors; then
+    echo "Setting CPU governor to 'ondemand'"
+    set_governor "ondemand"
+else
+    echo "'ondemand' not available, setting CPU governor to 'performance'"
+    set_governor "performance"
+fi
+
+# Enable Turbo Boost for Intel and AMD
+enable_turbo_boost() {
+    # Intel Turbo Boost
+    if [ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]; then
+        echo "Enabling Intel Turbo Boost"
+        echo '0' | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo > /dev/null
+    elif [ -f /sys/devices/system/cpu/cpufreq/boost ]; then
+        echo "Enabling generic CPU Turbo Boost"
+        echo '1' | sudo tee /sys/devices/system/cpu/cpufreq/boost > /dev/null
+    # AMD Turbo Core (if applicable)
+    elif grep -i "AuthenticAMD" /proc/cpuinfo > /dev/null; then
+        if [ -f /sys/devices/system/cpu/cpufreq/boost ]; then
+            echo "Enabling AMD Turbo Core"
+            echo '1' | sudo tee /sys/devices/system/cpu/cpufreq/boost > /dev/null
+        else
+            echo "AMD Turbo Core control not found."
+        fi
+    else
+        echo "Turbo Boost/Turbo Core setting not found or not supported on this system."
+    fi
+}
+
+# Set performance profile via power-profiles-daemon
+set_power_profile() {
+    if command -v powerprofilesctl &> /dev/null; then
+        if powerprofilesctl list | grep -q "performance"; then
+            echo "Setting system power profile to 'performance'"
+            sudo powerprofilesctl set performance
+        else
+            echo "'performance' power profile not available. Using 'balanced' profile."
+            sudo powerprofilesctl set balanced
+        fi
+    else
+        echo "powerprofilesctl not found. Skipping power profile configuration."
+    fi
+}
+
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
     echo "⚠️  This script must be run as root. Prompting for root access..."
@@ -25,10 +85,6 @@ else
     PACKAGE_MANAGER="apt"
     echo "📦 Nala not found. Falling back to APT."
 fi
-
-sudo mkdir -p /etc/apt/keyrings
-export DEBIAN_FRONTEND=noninteractive
-export MESA_NO_AVX512=1
 
 # Install nala if not already installed
 if [ "$PACKAGE_MANAGER" = "apt" ]; then
@@ -91,7 +147,6 @@ get_latest_gl_default() {
   | sort -V | tail -n 1
 }
 
-
 # Detect and install GPU monitoring tools
 detect_gpu
 
@@ -150,6 +205,9 @@ sudo $PACKAGE_MANAGER install -y gamemode libvulkan1
 echo "🎮 Installing Steam..."
 sudo snap install steam --classic
 
+echo "📦 Installing required packages: powertop & power-profiles-daemon..."
+sudo $PACKAGE_MANAGER install -y powertop power-profiles-daemon
+
 # Installing system utilities
 echo "🛠 Installing system utilities..."
 sudo $PACKAGE_MANAGER install -y ntfs-3g arp-scan nmap exfat-fuse btrfs-progs fuse fling exfatprogs autoconf libtool pkg-config smartmontools nvme-cli hdparm
@@ -195,7 +253,6 @@ flatpak install org.gnome.Boxes --assumeyes
 
 # Function to append a new launcher to KDE taskbar configuration
 
-
 echo "🔄 Pinning apps to the KDE 6 taskbar..."
 #append_launcher spotify_spotify.desktop
 #append_launcher steam.desktop       
@@ -228,7 +285,7 @@ sudo systemctl restart systemd-modules-load.service
 LATEST_GL_VERSION=$(get_latest_gl_default)
 
 echo "🎵 Installing Ardour... Please wait."
-sudo $PACKAGE_MANAGER install ardour
+sudo $PACKAGE_MANAGER install ardour -y
 
 echo "🎵 Installing Flatpak... Please wait."
 sudo flatpak install org.pipewire.Helvum --assumeyes
@@ -256,6 +313,10 @@ sudo flatpak install org.gnome.Firmware --assumeyes
 # Displaying sensor readings
 echo "📊 Displaying sensor readings..."
 sudo sensors
+
+echo "⚙️ Setting CPU performance governor to 🏎️ 'ondemand' and if not available 🔋 'performance'"
+enable_turbo_boost
+set_power_profile
 
 # Displaying completion message with Zenity
 zenity --info --width=400 --height=425 --title="Installation Complete" \
