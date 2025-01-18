@@ -308,6 +308,8 @@ REBOOT_CHOICE=$(zenity --question --width=600 --height=400 \
     --ok-label="Reboot" \
     --cancel-label="Later")
 
+REBOOT_CHOICE=$?
+
 if [ "$REBOOT_CHOICE" -eq 0 ]; then
     echo "🔄 Rebooting the system..."
     reboot
