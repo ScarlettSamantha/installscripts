@@ -22,23 +22,29 @@ set_governor "performance"
 
 # Enable Turbo Boost for Intel and AMD
 enable_turbo_boost() {
-    # Intel Turbo Boost
-    if [ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]; then
-        echo "Enabling Intel Turbo Boost"
-        echo '0' | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo > /dev/null
-    elif [ -f /sys/devices/system/cpu/cpufreq/boost ]; then
-        echo "Enabling generic CPU Turbo Boost"
-        echo '1' | sudo tee /sys/devices/system/cpu/cpufreq/boost > /dev/null
-    # AMD Turbo Core (if applicable)
-    elif grep -i "AuthenticAMD" /proc/cpuinfo > /dev/null; then
+    # Check CPU vendor from /proc/cpuinfo
+    if grep -qi "GenuineIntel" /proc/cpuinfo; then
+        # Intel logic
+        if [ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]; then
+            echo "Enabling Intel Turbo Boost"
+            echo '0' | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo >/dev/null
+        elif [ -f /sys/devices/system/cpu/cpufreq/boost ]; then
+            echo "Enabling generic CPU Turbo Boost (Intel)"
+            echo '1' | sudo tee /sys/devices/system/cpu/cpufreq/boost >/dev/null
+        else
+            echo "No Intel Turbo Boost control found."
+        fi
+    elif grep -qi "AuthenticAMD" /proc/cpuinfo; then
+        # AMD logic
         if [ -f /sys/devices/system/cpu/cpufreq/boost ]; then
             echo "Enabling AMD Turbo Core"
-            echo '1' | sudo tee /sys/devices/system/cpu/cpufreq/boost > /dev/null
+            echo '1' | sudo tee /sys/devices/system/cpu/cpufreq/boost >/dev/null
         else
             echo "AMD Turbo Core control not found."
         fi
     else
-        echo "Turbo Boost/Turbo Core setting not found or not supported on this system."
+        # Likely a VM or unsupported CPU
+        echo "CPU Turbo Boost not applicable or system not recognized (possibly a VM)."
     fi
 }
 
@@ -220,7 +226,6 @@ flatpak install com.belmoussaoui.Authenticator --assumeyes
 flatpak install org.gnome.Snapshot --assumeyes
 flatpak install com.belmoussaoui.Decoder --assumeyes
 flatpak install com.github.ADBeveridge.Raider --assumeyes
-flatpak install io.gitlab.adhami3310.Impression --assumeyes
 flatpak install com.belmoussaoui.Authenticator --assumeyes
 flatpak install org.gnome.dspy --assumeyes
 flatpak install org.gnome.Boxes --assumeyes
@@ -286,7 +291,7 @@ sudo flatpak install org.gnome.Firmware --assumeyes
 
 # Displaying sensor readings
 echo "📊 Displaying sensor readings..."
-sudo sensors-detect
+sudo sensors-detect --auto < /dev/null 2>&1 | grep -i 'yes'
 
 echo "⚙️ Setting CPU performance governor to 🏎️ 'ondemand' and if not available 🔋 'performance'"
 enable_turbo_boost
