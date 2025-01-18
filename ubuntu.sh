@@ -7,9 +7,6 @@ echo "🔄 Adding i386 architecture support..."
 sudo dpkg --add-architecture i386
 sudo apt update
 
-echo "📦 Installing essential 32-bit libraries..."
-sudo apt install -y libc6:i386 libstdc++6:i386 libgl1-mesa-glx:i386 libgl1-mesa-dri:i386
-
 echo "📦 Installing core system utilities and dependencies..."
 sudo apt install -y apt-transport-https software-properties-common curl wget gnupg lsb-release ca-certificates ubuntu-restricted-extras libfuse2
 
