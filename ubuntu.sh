@@ -125,6 +125,7 @@ sudo $PACKAGE_MANAGER install -y krita vlc gimp mesa-utils fonts-firacode obs-st
 # Installing Spotify
 echo "🎵 Installing Spotify..."
 sudo snap install spotify
+sudo flatpak install dev.alextren.Spot --assumeyes
 
 # Installing Discord
 echo "💬 Installing Discord..."
@@ -223,6 +224,8 @@ yes | sudo sensors-detect --auto
 echo "🔄 Reloading sensor modules..."
 sudo systemctl restart systemd-modules-load.service
 
+sudo add-apt-repository ppa:cappelikan/ppa
+sudo $PACKAGE_MANAGER update && sudo $PACKAGE_MANAGER upgrade -y  
 
 LATEST_GL_VERSION=$(get_latest_gl_default)
 
@@ -235,9 +238,33 @@ else
   flatpak install flathub org.freedesktop.Platform.GL.default --assumeyes
 fi
 
-flatpak install flathub org.freedesktop.Platform.VulkanLayer.MESA --assumeyes
+sudo flatpak install flathub org.freedesktop.Platform.VulkanLayer.MESA --assumeyes
 export MESA_NO_AVX512=1
 sudo $PACKAGE_MANAGER install ardour
+sudo flatpak install org.pipewire.Helvum --assumeyes
+
+sudo flatpak install io.github.webcamoid.Webcamoid --assumeyes
+sudo flatpak install com.bitwig.BitwigStudio --assumeyes
+sudo flatpak install md.obsidian.Obsidian --assumeyes
+sudo flatpak install org.kde.kdenlive --assumeyes
+
+sudo flatpak install org.freecad.FreeCAD --assumeyes
+sudo flatpak install org.onlyoffice.desktopeditors --assumeyes
+
+sudo flatpak install io.github.seadve.Kooha --assumeyes
+sudo flatpak install dev.geopjr.Calligraphy --assumeyes
+sudo flatpak install io.gitlab.adhami3310.Impression --assumeyes
+sudo flatpak install net.mkiol.Jupii --assumeyes
+sudo flatpak install io.github.amit9838.mousam --assumeyes
+sudo flatpak intsall org.kde.audiotube --assumeyes
+sudo flatpak install io.github.realmazharhussain.GdmSettings --assumeyes
+sudo flatpak install hu.irl.cameractrls --assumeyes
+sudo flatpak install io.gitlab.leesonwai.Sums --assumeyes 
+sudo flatpak install com.raggesilver.BlackBox --assumeyes
+sudo flatpak install org.gnome.Calculator --assumeyes
+sudo flatpak install de.hummdudel.Libellus --assumeyes
+sudo flatpak install ru.linux_gaming.PortProton --assumeyes
+sudo flatpak install org.gnome.Firmware --assumeyes
 
 # Displaying sensor readings
 echo "📊 Displaying sensor readings..."
