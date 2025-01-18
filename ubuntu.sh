@@ -28,6 +28,7 @@ fi
 
 sudo mkdir -p /etc/apt/keyrings
 export DEBIAN_FRONTEND=noninteractive
+export MESA_NO_AVX512=1
 
 # Install nala if not already installed
 if [ "$PACKAGE_MANAGER" = "apt" ]; then
@@ -224,33 +225,19 @@ yes | sudo sensors-detect --auto
 echo "🔄 Reloading sensor modules..."
 sudo systemctl restart systemd-modules-load.service
 
-sudo add-apt-repository ppa:cappelikan/ppa
-sudo $PACKAGE_MANAGER update && sudo $PACKAGE_MANAGER upgrade -y  
-
 LATEST_GL_VERSION=$(get_latest_gl_default)
 
 echo "🎵 Installing Ardour... Please wait."
-if [ -n "$LATEST_GL_VERSION" ]; then
-  echo "🔍 Installing org.freedesktop.Platform.GL.default version $LATEST_GL_VERSION"
-  flatpak install flathub "org.freedesktop.Platform.GL.default//$LATEST_GL_VERSION" --assumeyes
-else
-  echo "⚠️ Could not determine the latest version. Installing default."
-  flatpak install flathub org.freedesktop.Platform.GL.default --assumeyes
-fi
-
-sudo flatpak install flathub org.freedesktop.Platform.VulkanLayer.MESA --assumeyes
-export MESA_NO_AVX512=1
 sudo $PACKAGE_MANAGER install ardour
-sudo flatpak install org.pipewire.Helvum --assumeyes
 
+echo "🎵 Installing Flatpak... Please wait."
+sudo flatpak install org.pipewire.Helvum --assumeyes
 sudo flatpak install io.github.webcamoid.Webcamoid --assumeyes
 sudo flatpak install com.bitwig.BitwigStudio --assumeyes
 sudo flatpak install md.obsidian.Obsidian --assumeyes
 sudo flatpak install org.kde.kdenlive --assumeyes
-
 sudo flatpak install org.freecad.FreeCAD --assumeyes
 sudo flatpak install org.onlyoffice.desktopeditors --assumeyes
-
 sudo flatpak install io.github.seadve.Kooha --assumeyes
 sudo flatpak install dev.geopjr.Calligraphy --assumeyes
 sudo flatpak install io.gitlab.adhami3310.Impression --assumeyes
@@ -268,7 +255,7 @@ sudo flatpak install org.gnome.Firmware --assumeyes
 
 # Displaying sensor readings
 echo "📊 Displaying sensor readings..."
-sensors
+sudo sensors
 
 # Displaying completion message with Zenity
 zenity --info --width=400 --height=425 --title="Installation Complete" \
