@@ -47,7 +47,9 @@ sudo $PACKAGE_MANAGER update
 
 # Installing core system utilities and dependencies
 echo "📦 Installing core system utilities and dependencies..."
-sudo $PACKAGE_MANAGER install -y apt-transport-https software-properties-common curl wget gnupg lsb-release ca-certificates ubuntu-restricted-extras libfuse2 snapd
+sudo $PACKAGE_MANAGER install -y apt-transport-https software-properties-common curl wget gnupg lsb-release ca-certificates ubuntu-restricted-extras libfuse2 snapd flatpak
+
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 # Installing development tools and kernel module support
 echo "🛠 Installing development tools and kernel module support..."
@@ -114,6 +116,18 @@ echo "🌐 Installing Google Chrome..."
 cd /tmp
 wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo $PACKAGE_MANAGER install -f -y
+
+# Install email client
+echo "Installing gnome packages"
+# Gnome Flatpaks
+flatpak install com.belmoussaoui.Authenticator --assumeyes
+flatpak install org.gnome.Snapshot --assumeyes
+flatpak install com.belmoussaoui.Decoder --assumeyes
+flatpak install com.github.ADBeveridge.Raider --assumeyes
+flatpak install io.gitlab.adhami3310.Impression --assumeyes
+flatpak install com.belmoussaoui.Authenticator --assumeyes
+flatpak install org.gnome.dspy --assumeyes
+flatpak install org.gnome.Boxes --assumeyes
 
 # Function to append a new launcher to KDE taskbar configuration
 append_launcher() {
