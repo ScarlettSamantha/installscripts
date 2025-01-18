@@ -3,7 +3,6 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
-
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
     echo "⚠️  This script must be run as root. Prompting for root access..."
@@ -72,6 +71,25 @@ install_gpu_tools() {
         fi
     fi
 }
+
+append_launcher() {
+    local desktop_file=$1
+    local config_file="$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"
+
+    echo "🔄 Adding $desktop_file to the KDE taskbar..."
+    killall plasmashell
+    sed -i "/launchers=/ s/$/,applications:$desktop_file/" "$config_file"
+    nohup plasmashell >/dev/null 2>&1 & disown
+
+    echo "✅ $desktop_file has been added to the KDE taskbar."
+}
+
+get_latest_gl_default() {
+  flatpak remote-info --log flathub org.freedesktop.Platform.GL.default \
+  | grep -oP '(?<=runtime/org.freedesktop.Platform.GL.default/x86_64/)[0-9]+\.[0-9]+' \
+  | sort -V | tail -n 1
+}
+
 
 # Detect and install GPU monitoring tools
 detect_gpu
@@ -174,17 +192,7 @@ flatpak install org.gnome.dspy --assumeyes
 flatpak install org.gnome.Boxes --assumeyes
 
 # Function to append a new launcher to KDE taskbar configuration
-append_launcher() {
-    local desktop_file=$1
-    local config_file="$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"
 
-    echo "🔄 Adding $desktop_file to the KDE taskbar..."
-    killall plasmashell
-    sed -i "/launchers=/ s/$/,applications:$desktop_file/" "$config_file"
-    nohup plasmashell >/dev/null 2>&1 & disown
-
-    echo "✅ $desktop_file has been added to the KDE taskbar."
-}
 
 echo "🔄 Pinning apps to the KDE 6 taskbar..."
 #append_launcher spotify_spotify.desktop
@@ -203,7 +211,6 @@ echo "✂️ Enabling TRIM support on NVMe..."
 sudo systemctl enable --now fstrim.timer
 sudo systemctl is-active --quiet fstrim.timer && echo "✂️ TRIM is active." || echo "❌ Failed to enable TRIM."
 
-
 echo "🧹 Cleanup of temp files"
 rm -f /tmp/discord.deb /tmp/openrgb.deb /tmp/google-chrome-stable_current_amd64.deb
 
@@ -216,12 +223,32 @@ yes | sudo sensors-detect --auto
 echo "🔄 Reloading sensor modules..."
 sudo systemctl restart systemd-modules-load.service
 
+
+LATEST_GL_VERSION=$(get_latest_gl_default)
+
+echo "🎵 Installing Ardour... Please wait."
+if [ -n "$LATEST_GL_VERSION" ]; then
+  echo "🔍 Installing org.freedesktop.Platform.GL.default version $LATEST_GL_VERSION"
+  flatpak install flathub "org.freedesktop.Platform.GL.default//$LATEST_GL_VERSION" --assumeyes
+else
+  echo "⚠️ Could not determine the latest version. Installing default."
+  flatpak install flathub org.freedesktop.Platform.GL.default --assumeyes
+fi
+
+flatpak install flathub org.freedesktop.Platform.VulkanLayer.MESA --assumeyes
+export MESA_NO_AVX512=1
+sudo $PACKAGE_MANAGER install ardour
+
+# Displaying sensor readings
+echo "📊 Displaying sensor readings..."
+sensors
+
 # Displaying completion message with Zenity
-zenity --info --width=800 --height=400 --title="Installation Complete" \
+zenity --info --width=400 --height=425 --title="Installation Complete" \
        --text="✅ All software installations and system configurations have been completed successfully!"
 
 # Prompt for reboot
-REBOOT_CHOICE=$(zenity --question --width=800 --height=600 \
+REBOOT_CHOICE=$(zenity --question --width=600 --height=400 \
     --title="Reboot Required" \
     --text="🔄 Do you want to reboot the system now?\n(Highly recommended)" \
     --ok-label="Reboot" \
@@ -234,9 +261,5 @@ else
     zenity --info --width=300 --height=100 --title="Reboot Skipped" \
            --text="❌ Reboot skipped. Please reboot manually later."
 fi
-
-# Displaying sensor readings
-echo "📊 Displaying sensor readings..."
-sensors
 
 echo "✅ Installation and setup complete!"
