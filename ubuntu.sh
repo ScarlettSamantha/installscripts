@@ -3,6 +3,7 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 sudo mkdir -p /etc/apt/keyrings
+export DEBIAN_FRONTEND=noninteractive
 
 echo "🔄 Adding i386 architecture support..."
 sudo dpkg --add-architecture i386
@@ -22,7 +23,7 @@ echo "⬆️ Upgrading existing packages..."
 sudo apt upgrade -y
 
 echo "🎨 Installing creative and media software..."
-sudo apt install -y krita vlc gimp mesa-utils fonts-firacode
+sudo apt install -y krita vlc gimp mesa-utils fonts-firacode obs-studio
 
 echo "🎵 Installing Spotify..."
 sudo snap install spotify
@@ -54,19 +55,33 @@ sudo apt install -y python3 python3-dev python3-pip python3-venv python3-flask p
 echo "🍹 Installing Wine and Proton tools..."
 sudo apt install -y protontricks wine wine32 wine64 winetricks
 
+echo "🔑 Installing Keychain for SSH key management..."
+sudo apt install -y keychain
+
 echo "🌐 Installing Google Chrome..."
 cd /tmp
 wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
 sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt install -f -y
 
-echo "🔄 Pinning Spotify, Steam, and Discord to the KDE 6 taskbar..."
-mkdir -p ~/.local/share/plasma_icons/
-ln -s /var/lib/snapd/desktop/applications/spotify_spotify.desktop ~/.local/share/plasma_icons/spotify.desktop
-ln -s /var/lib/snapd/desktop/applications/steam.desktop ~/.local/share/plasma_icons/steam.desktop
-ln -s /usr/share/applications/discord.desktop ~/.local/share/plasma_icons/discord.desktop
+# Function to append a new launcher to KDE taskbar configuration
+append_launcher() {
+    local desktop_file=$1
+    local config_file="$HOME/.config/plasma-org.kde.plasma.desktop-appletsrc"
 
-kquitapp6 plasmashell
-kstart6 plasmashell
+    echo "🔄 Adding $desktop_file to the KDE taskbar..."
+    kquitapp6 plasmashell
+    sed -i "/launchers=/ s/$/,applications:$desktop_file/" "$config_file"
+    kstart6 plasmashell
+
+    echo "✅ $desktop_file has been added to the KDE taskbar."
+}
+
+echo "🔄 Pinning Spotify, Steam, Discord, OBS Studio, and Krita to the KDE 6 taskbar..."
+append_launcher spotify_spotify.desktop
+append_launcher steam.desktop
+append_launcher discord.desktop
+append_launcher org.kde.krita.desktop
+append_launcher com.obsproject.Studio.desktop
 
 echo "🔄 Final system update and upgrade..."
 sudo apt update -y
