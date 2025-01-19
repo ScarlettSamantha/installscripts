@@ -4,6 +4,10 @@
 set -e
 
 sudo mkdir -p /etc/apt/keyrings
+
+mkdir -p "$HOME/.kube"
+chmod 0700 "$HOME/.kube"
+
 export DEBIAN_FRONTEND=noninteractive
 export MESA_NO_AVX512=1
 
@@ -194,11 +198,11 @@ sudo $PACKAGE_MANAGER install -y ntfs-3g arp-scan nmap exfat-fuse btrfs-progs fu
 
 # Installing productivity tools
 echo "💻 Installing productivity tools..."
-sudo $PACKAGE_MANAGER install -y remmina transmission-qt git mc docker.io htop btop
+sudo $PACKAGE_MANAGER install -y remmina transmission-qt git mc htop btop
 
 # Installing Python development tools
 echo "🐍 Installing Python development tools..."
-sudo $PACKAGE_MANAGER install -y python3 python3-dev python3-pip python3-venv python3-flask python3-gunicorn
+sudo $PACKAGE_MANAGER install -y python3 python3-dev python3-pip python3-venv python3-flask python3-gunicorn containerd runc docker.io
 
 # Installing Wine and Proton tools
 echo "🍹 Installing Wine and Proton tools..."
@@ -266,7 +270,7 @@ LATEST_GL_VERSION=$(get_latest_gl_default)
 echo "🎵 Installing Ardour... Please wait."
 sudo $PACKAGE_MANAGER install ardour -y
 
-echo "🎵 Installing Flatpak... Please wait."
+echo "🚀 Installing Flatpak... Please wait."
 sudo flatpak install org.pipewire.Helvum --assumeyes
 sudo flatpak install io.github.webcamoid.Webcamoid --assumeyes
 sudo flatpak install com.bitwig.BitwigStudio --assumeyes
@@ -289,6 +293,13 @@ sudo flatpak install de.hummdudel.Libellus --assumeyes
 sudo flatpak install ru.linux_gaming.PortProton --assumeyes
 sudo flatpak install org.gnome.Firmware --assumeyes
 
+echo "🔄 Installing MicroK8s (minimal lightweight Kubernetes)..."
+sudo snap install microk8s --classic
+sudo usermod -a -G microk8s "$USER"
+microk8s status --wait-ready
+microk8s enable dns || true
+microk8s enable hostpath-storage || true
+
 # Displaying sensor readings
 echo "📊 Displaying sensor readings..."
 sudo sensors-detect --auto < /dev/null 2>&1 | grep -i 'yes'
@@ -298,11 +309,11 @@ enable_turbo_boost
 set_power_profile
 
 # Displaying completion message with Zenity
-zenity --info --width=400 --height=425 --title="Installation Complete" \
+zenity --info --width=200 --height=300 --title="Installation Complete" \
        --text="✅ All software installations and system configurations have been completed successfully!"
 
 # Prompt for reboot
-REBOOT_CHOICE=$(zenity --question --width=600 --height=400 \
+REBOOT_CHOICE=$(zenity --question --width=300 --height=200 \
     --title="Reboot Required" \
     --text="🔄 Do you want to reboot the system now?\n(Highly recommended)" \
     --ok-label="Reboot" \
