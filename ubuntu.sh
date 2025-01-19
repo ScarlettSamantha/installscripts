@@ -194,11 +194,11 @@ sudo $PACKAGE_MANAGER install -y powertop power-profiles-daemon
 
 # Installing system utilities
 echo "🛠 Installing system utilities..."
-sudo $PACKAGE_MANAGER install -y ntfs-3g arp-scan nmap exfat-fuse btrfs-progs fuse fling exfatprogs autoconf libtool pkg-config smartmontools nvme-cli hdparm
+sudo $PACKAGE_MANAGER install -y ntfs-3g arp-scan nmap exfat-fuse btrfs-progs fuse fling exfatprogs autoconf libtool pkg-config smartmontools nvme-cli hdparm ssh
 
 # Installing productivity tools
 echo "💻 Installing productivity tools..."
-sudo $PACKAGE_MANAGER install -y remmina transmission-qt git mc htop btop
+sudo $PACKAGE_MANAGER install -y remmina transmission-qt git mc htop btop evolution 
 
 # Installing Python development tools
 echo "🐍 Installing Python development tools..."
@@ -211,6 +211,12 @@ sudo $PACKAGE_MANAGER install -y protontricks wine wine32 wine64 winetricks
 # Installing Keychain for SSH key management
 echo "🔑 Installing Keychain for SSH key management..."
 sudo $PACKAGE_MANAGER install -y keychain
+
+if [[ "$1" == "--developer" ]]; then
+    echo "👩🏻‍💻 Installing developer specific item"
+    sudo $PACKAGE_MANAGER install -y dbeaver-ce gdb ddd valgrind kcachegrind python3-ptrace dnstracer strace 
+    sudo flatpak install flathub io.dbeaver.DBeaverCommunity
+fi
 
 # Installing Google Chrome
 echo "🌐 Installing Google Chrome..."
