@@ -132,7 +132,7 @@ get_latest_gl_default() {
 }
 
 # Detect and install GPU monitoring tools
-detect_gpu
+#detect_gpu
 
 # Adding i386 architecture support
 echo "🔄 Adding i386 architecture support..."
@@ -194,7 +194,11 @@ sudo $PACKAGE_MANAGER install -y powertop power-profiles-daemon
 
 # Installing system utilities
 echo "🛠 Installing system utilities..."
+<<<<<<< HEAD
 sudo $PACKAGE_MANAGER install -y ntfs-3g arp-scan nmap exfat-fuse btrfs-progs fuse fling exfatprogs autoconf libtool pkg-config smartmontools nvme-cli hdparm ssh
+=======
+sudo $PACKAGE_MANAGER install -y ntfs-3g arp-scan nmap exfat-fuse btrfs-progs fuse fling exfatprogs autoconf libtool pkg-config smartmontools nvme-cli hdparm ssh hwinfo
+>>>>>>> 056d015 (:wrench: Fixed a gpu thing that worked only in vm)
 
 # Installing productivity tools
 echo "💻 Installing productivity tools..."
