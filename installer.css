@@ -1,0 +1,43 @@
+/* General Styles */
+Screen {
+    background: black;
+    color: white;
+    height: 100%;
+}
+
+/* Header and Footer */
+Header, Footer {
+    background: #333;
+    color: white;
+    text-align: center;
+    padding: 1;
+}
+
+/* Tree Widget */
+Tree {
+    border: solid gray;  /* Fixed border syntax */
+    padding: 1;
+    background: #222;
+    color: white;
+}
+
+/* Status Message */
+Static#status {
+    text-align: center;
+    margin: 1;  /* Fixed margin */
+    text-style: bold;  /* Fixed font-weight */
+    color: yellow;
+}
+
+/* Button */
+Button#confirm_button {
+    background: green;
+    color: white;
+    border: none;
+    padding: 1 2;  /* Fixed padding */
+    margin: 1;  /* Fixed margin */
+}
+
+Button#confirm_button:disabled {
+    background: gray;
+}
