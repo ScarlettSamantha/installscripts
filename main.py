@@ -731,7 +731,11 @@ class PackageInstallerApp:
     # Run the application.
     # -------------------------------------------------------------------------
     def run(self) -> None:
-        curses.wrapper(self.draw_menu)
+        try:
+            curses.wrapper(self.draw_menu)
+        except curses.error as e:
+            curses.endwin()
+            print(f"Curses error: {e}")
 
 # =============================================================================
 # Main entry point.
