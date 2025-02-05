@@ -43,12 +43,12 @@ class PackageInstallerApp:
         "header": "Package Installer",
         "footer": "scarlett samantha verheul <scarlett.verheul@gmail.com> Scarlettbytes.nl",
         "menu_instructions": (
-            "[↑/↓: Navigate, →/Enter: Select, ESC/←/B: Back, Space: Toggle, I: Install all, U: Info, R: Uninstall, L: List, Q: Quit]"
+            "[↑/↓: Navigate, →/Enter: Select, ESC/←/B: Back, Space: Toggle selection, i: Install selected, I: Info, R: Uninstall, L: List, Q: Quit]"
         ),
         "select_distro": "Select a Distribution:",
         "select_method": "Select an Install Method:",
-        "select_category": "Select Categories (→ to expand, Space to toggle):",
-        "select_package": "Select a package (Enter toggles selection, R uninstalls)",
+        "select_category": "Select Categories (→ to expand, Space to toggle selection):",
+        "select_package": "Select a package (Enter toggles selection, R to uninstall)",
         "installation_log": "Installation Log:",
         "uninstallation_log": "Uninstallation Log:",
         "no_packages_install": "No packages to install in this category.",
@@ -71,8 +71,9 @@ class PackageInstallerApp:
         self.selected_distro: str = ""
         self.selected_method: str = ""
         self.selected_packages: set[str] = set()  # holds package names selected for installation.
-        self.current_category: str = ""  # always a string now
+        self.current_category: str = ""
         self.translations: Dict[str, str] = translations if translations is not None else self.DEFAULT_TRANSLATIONS
+        self.last_selected_count: int = 0  # For animating package count
 
     # i18n property getters.
     @property
@@ -230,6 +231,26 @@ class PackageInstallerApp:
         return ""
 
     # -------------------------------------------------------------------------
+    # Run a command while showing a Braille spinner animation.
+    # -------------------------------------------------------------------------
+    def run_command_with_spinner(self, stdscr: curses.window, cmd: str, row: int, col: int) -> None:
+        """
+        Run a shell command asynchronously and display a Braille spinner at (row, col)
+        until the command finishes.
+        """
+        spinner: List[str] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        spinner_index: int = 0
+        while proc.poll() is None:
+            stdscr.addstr(row, col, spinner[spinner_index % len(spinner)])
+            stdscr.refresh()
+            spinner_index += 1
+            curses.napms(100)
+        # Clear spinner when done.
+        stdscr.addstr(row, col, " ")
+        stdscr.refresh()
+
+    # -------------------------------------------------------------------------
     # UI utility functions.
     # -------------------------------------------------------------------------
     def draw_progress_bar(self, stdscr: curses.window, current: int, total: int,
@@ -380,7 +401,6 @@ class PackageInstallerApp:
     def install_category_packages(self, stdscr: curses.window) -> None:
         stdscr.clear()
         stdscr.addstr(1, 2, f"{self.install_button_text} {self.current_category}", curses.A_BOLD)
-        # Log the backend in use.
         stdscr.addstr(2, 2, f"{self.installation_log_text} (Using backend: {self.selected_method})", curses.A_BOLD)
         stdscr.refresh()
         _, packages = self.get_category_data(self.selected_distro, self.selected_method, self.current_category)
@@ -400,8 +420,10 @@ class PackageInstallerApp:
         stdscr.refresh()
         for idx, pkg in enumerate(to_install, start=1):
             pkg_name = self.get_pkg_name(pkg)
-            stdscr.addstr(3, 2, f"Installing: {pkg_name}", curses.A_BOLD)
+            install_text = f"Installing: {pkg_name}"
+            stdscr.addstr(3, 2, install_text, curses.A_BOLD)
             stdscr.clrtoeol()
+            spinner_col = 2 + len(install_text) + 1
             self.draw_progress_bar(stdscr, idx, total, row=4, col=2, bar_width=bar_width)
             stdscr.refresh()
             log_row = 5 + idx
@@ -411,7 +433,7 @@ class PackageInstallerApp:
             else:
                 cmd = self.get_install_command(self.selected_method, pkg_name)
                 if cmd:
-                    self.install_package_cmd(cmd)
+                    self.run_command_with_spinner(stdscr, cmd, row=3, col=spinner_col)
                     PackageInstallerApp.is_package_installed.cache_clear()
                 stdscr.addstr(log_row, 2, f"Installed {self.CATEGORY_MARKER_INSTALLED}: {pkg_name}",
                               curses.color_pair(3) | curses.A_BOLD)
@@ -477,8 +499,10 @@ class PackageInstallerApp:
         stdscr.addstr(2, 2, f"{self.installation_log_text} (Using backend: {self.selected_method})", curses.A_BOLD)
         stdscr.refresh()
         for idx, pkg in enumerate(self.selected_packages, start=1):
-            stdscr.addstr(3, 2, f"Installing: {pkg}", curses.A_BOLD)
+            install_text = f"Installing: {pkg}"
+            stdscr.addstr(3, 2, install_text, curses.A_BOLD)
             stdscr.clrtoeol()
+            spinner_col = 2 + len(install_text) + 1
             self.draw_progress_bar(stdscr, idx, total, row=4, col=2, bar_width=bar_width)
             stdscr.refresh()
             log_row = 5 + idx
@@ -488,7 +512,7 @@ class PackageInstallerApp:
             else:
                 cmd = self.get_install_command(self.selected_method, pkg)
                 if cmd:
-                    self.install_package_cmd(cmd)
+                    self.run_command_with_spinner(stdscr, cmd, row=3, col=spinner_col)
                     PackageInstallerApp.is_package_installed.cache_clear()
                 stdscr.addstr(log_row, 2, f"Installed {self.CATEGORY_MARKER_INSTALLED}: {pkg}",
                               curses.color_pair(3) | curses.A_BOLD)
@@ -496,18 +520,36 @@ class PackageInstallerApp:
         stdscr.addstr(7 + total, 2, self.install_complete_text, curses.A_REVERSE)
         stdscr.refresh()
         ch = stdscr.getch()
-        if ch in (ord('r'), ord('R')):
+        if ch == ord('R'):
             curses.endwin()
             print("Rebooting now...")
             subprocess.run("sudo reboot", shell=True)
         else:
             curses.endwin()
 
+    def animate_selected_count(self, stdscr: curses.window, old: int, new: int) -> None:
+        """
+        Animate the 'Selected Packages' counter from old to new value.
+        Flash the counter in green (using color pair 3) before reverting to the default (using color pair 1).
+        """
+        if new > old:
+            for count in range(old + 1, new + 1):
+                stdscr.addstr(self.INFO_ROW, 2, f"Selected Packages: {count} ", curses.A_BOLD | curses.color_pair(3))
+                stdscr.refresh()
+                curses.napms(300)  # increased delay for noticeable flash
+                stdscr.addstr(self.INFO_ROW, 2, f"Selected Packages: {count} ", curses.A_BOLD | curses.color_pair(1))
+                stdscr.refresh()
+                curses.napms(100)
+        else:
+            stdscr.addstr(self.INFO_ROW, 2, f"Selected Packages: {new} ", curses.A_BOLD | curses.color_pair(1))
+            stdscr.refresh()
+
     # -------------------------------------------------------------------------
     # Main TUI loop.
     # -------------------------------------------------------------------------
     def draw_menu(self, stdscr: curses.window) -> None:
         curses.curs_set(0)
+        curses.set_escdelay(25)  # Adjust this value if ESC key response is not as expected.
         curses.start_color()
         curses.use_default_colors()
         curses.mousemask(curses.ALL_MOUSE_EVENTS | curses.REPORT_MOUSE_POSITION)
@@ -527,8 +569,8 @@ class PackageInstallerApp:
             max_items: int = height - 10
 
             stdscr.addstr(self.HEADER_ROW, 2, self.header_text, curses.A_BOLD)
-            stdscr.addstr(self.INFO_ROW, 2, self.menu_instructions, curses.A_DIM)
-            stdscr.addstr(2, 2, f"Selected Packages: {len(self.selected_packages)}", curses.A_BOLD)
+            stdscr.addstr(self.INFO_ROW, 2, f"Selected Packages: {len(self.selected_packages)}", curses.A_BOLD)
+            stdscr.addstr(2, 40, self.menu_instructions, curses.A_DIM)
 
             # Set menu_items based on current mode
             if mode == "distros":
@@ -536,27 +578,29 @@ class PackageInstallerApp:
                 menu_items: Sequence[Union[str, Tuple[str, Any, str]]] = distro_menu
                 stdscr.addstr(4, 2, self.select_distro_text, curses.A_UNDERLINE)
             elif mode == "methods":
-                # Ensure selected_distro is a string from distro_menu
                 methods_menu: List[str] = list(self.package_data[self.selected_distro].keys()) + [self.back_button_text]
                 menu_items: Sequence[Union[str, Tuple[str, Any, str]]] = methods_menu
                 stdscr.addstr(4, 2, f"Distro: {self.selected_distro}", curses.A_BOLD)
                 stdscr.addstr(5, 2, self.select_method_text, curses.A_UNDERLINE)
             elif mode == "packages":
-                # categories is a dict so keys are strings
                 categories = self.package_data[self.selected_distro][self.selected_method]
                 packages_menu: List[Tuple[str, str, str]] = [
                     (self.get_category_display_text(self.selected_distro, self.selected_method, cat), cat, "category")
                     for cat in categories.keys()
                 ]
+                # Back button as a tuple with type "back"
                 packages_menu.append((self.back_button_text, "", "back"))
                 menu_items: Sequence[Union[str, Tuple[str, Any, str]]] = packages_menu
                 stdscr.addstr(4, 2, f"Distro: {self.selected_distro} | Method: {self.selected_method}", curses.A_BOLD)
                 stdscr.addstr(5, 2, self.select_category_text, curses.A_UNDERLINE)
             elif mode == "category":
                 _, pkg_list = self.get_category_data(self.selected_distro, self.selected_method, self.current_category)
-                category_menu: List[Union[str, Tuple[str, Any, str]]] = [(self.install_button_text, None, "install")] + \
-                    [(self.get_package_display_text(pkg), pkg, "package") for pkg in pkg_list] + \
-                    [self.back_button_text]
+                # Define the install option and packages, and now define the Back button as a tuple.
+                category_menu: List[Union[str, Tuple[str, Any, str]]] = (
+                    [(self.install_button_text, None, "install")] +
+                    [(self.get_package_display_text(pkg), pkg, "package") for pkg in pkg_list] +
+                    [(self.back_button_text, None, "back")]
+                )
                 menu_items: Sequence[Union[str, Tuple[str, Any, str]]] = category_menu
                 stdscr.addstr(4, 2, f"Category: {self.current_category} | Packages: {len(pkg_list)}", curses.A_BOLD)
                 stdscr.addstr(5, 2, self.select_package_text, curses.A_UNDERLINE)
@@ -631,7 +675,7 @@ class PackageInstallerApp:
                 break
             elif k == ord("l") or k == ord("L"):
                 self.list_installed_packages(stdscr)
-            elif k in (self.key_escape, curses.KEY_LEFT, ord("b")):
+            elif k in (self.key_escape, curses.KEY_LEFT, ord("b"), ord("B")):
                 if mode == "methods":
                     mode = "distros"
                 elif mode == "packages":
@@ -646,7 +690,6 @@ class PackageInstallerApp:
                 current_selection = (current_selection + 1) % len(menu_items)
             elif k in (ord("\n"), curses.KEY_RIGHT):
                 if mode == "distros":
-                    # Here menu_items is a list of strings.
                     self.selected_distro = menu_items[current_selection]  # type: ignore
                     mode = "methods"
                     current_selection = 0
@@ -660,11 +703,11 @@ class PackageInstallerApp:
                     current_selection = 0
                     scroll_offset = 0
                 elif mode == "packages":
-                    if menu_items[current_selection] == self.back_button_text:
+                    current_item = menu_items[current_selection]
+                    if isinstance(current_item, tuple) and current_item[2] == "back":
                         mode = "methods"
                     else:
-                        # menu_items[current_selection] is a tuple (display, category, "category")
-                        self.current_category = menu_items[current_selection][1]  # type: ignore
+                        self.current_category = current_item[1]  # type: ignore
                         mode = "category"
                     current_selection = 0
                     scroll_offset = 0
@@ -687,17 +730,17 @@ class PackageInstallerApp:
                             else:
                                 self.selected_packages.add(pkg_name)
                         else:
-                            self.show_temp_message(stdscr, f"{pkg_name} is already installed. Press 'U' for info.")
+                            self.show_temp_message(stdscr, f"{pkg_name} is already installed. Press 'I' for info.")
             elif k == ord(" "):
-                if mode == "packages" and menu_items[current_selection] != self.back_button_text:
-                    if isinstance(menu_items[current_selection], str):
-                        full_text = menu_items[current_selection][0]
-                    else:
-                        full_text = menu_items[current_selection][0]
+                if mode == "packages":
+                    current_item = menu_items[current_selection]
+                    if isinstance(current_item, tuple) and current_item[2] == "back":
+                        continue
+                    display_text = current_item[0] if isinstance(current_item, tuple) else current_item
                     try:
-                        cat_name = full_text.split(" ", 1)[1].split("(", 1)[0].strip()
+                        cat_name = display_text.split(" ", 1)[1].split("(", 1)[0].strip()
                     except Exception:
-                        cat_name = full_text
+                        cat_name = display_text
                     self.current_category = str(cat_name)
                     _, cat_pkgs = self.get_category_data(self.selected_distro, self.selected_method, self.current_category)
                     remaining = [self.get_pkg_name(pkg) for pkg in cat_pkgs
@@ -708,11 +751,15 @@ class PackageInstallerApp:
                     else:
                         for pkg in remaining:
                             self.selected_packages.add(self.get_pkg_name(pkg))
+                    new_count = len(self.selected_packages)
+                    if new_count != self.last_selected_count:
+                        self.animate_selected_count(stdscr, self.last_selected_count, new_count)
+                        self.last_selected_count = new_count
             elif k == ord("i"):
                 if self.selected_packages:
                     self.install_selected_packages(stdscr)
                     break
-            elif k == ord("u"):
+            elif k == ord("I"):
                 if mode == "category" and isinstance(menu_items[current_selection], tuple) and menu_items[current_selection][2] == "package":
                     pkg_obj = menu_items[current_selection][1]
                     pkg_name = self.get_pkg_name(pkg_obj)
@@ -720,7 +767,7 @@ class PackageInstallerApp:
                         self.show_package_info(stdscr, pkg_name, self.selected_method)
                     else:
                         self.show_temp_message(stdscr, f"{pkg_name} is not installed.")
-            elif k == ord("r"):
+            elif k == ord("R"):
                 if mode == "category" and isinstance(menu_items[current_selection], tuple) and menu_items[current_selection][2] == "package":
                     pkg_obj = menu_items[current_selection][1]
                     pkg_name = self.get_pkg_name(pkg_obj)
@@ -731,11 +778,19 @@ class PackageInstallerApp:
     # Run the application.
     # -------------------------------------------------------------------------
     def run(self) -> None:
+        import os
         try:
             curses.wrapper(self.draw_menu)
-        except curses.error as e:
-            curses.endwin()
-            print(f"Curses error: {e}")
+        except curses.error:
+            try:
+                curses.endwin()
+            except Exception:
+                pass  # Prevent errors if curses is already terminated
+            finally:
+                print("\033[H\033[J", end="")  # Clear terminal
+                print("\033[H\033[0J")  # Move cursor to the bottom
+                print("Finished installing packages, have a nice day!")
+                os._exit(0)
 
 # =============================================================================
 # Main entry point.
@@ -746,9 +801,9 @@ def main() -> None:
 
 if __name__ == "__main__":
     def signal_handler(sig, frame) -> None:
-        curses.endwin()
         print("\nInterrupted! Exiting gracefully...")
         sys.exit(0)
+        curses.endwin()
     signal.signal(signal.SIGINT, signal_handler)
     try:
         main()
