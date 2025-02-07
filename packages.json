@@ -6,7 +6,8 @@
           "packages": [
             "containerd",
             "docker.io",
-            "runc"
+            "runc",
+            "flatpak"
           ]
         },
         "Development Tools": {
@@ -14,8 +15,41 @@
           "packages": [
             "build-essential",
             "clang",
+            "cmake",
             "dkms"
           ]
+        },
+        "Development - PHP": {
+            "description": "Packages and tools for PHP development, including the PHP interpreter and extensions.",
+            "packages": [
+            "php8.3",
+            "php8.3-fpm",
+            "php8.3-cli",
+            "php8.3-mbstring",
+            "php8.3-xml",
+            "php8.3-curl",
+            "php8.3-zip",
+            "php8.3-xdebug",
+            "php8.3-becrypt",
+            "composer",
+            "php8.3-calendar",
+            "php8.3-ctype",
+            "php8.3-exif",
+            "php8.3-ffi",
+            "php8.3-fileinfo",
+            "php8.3-ftp",
+            "php8.3-gettext",
+            "php8.3-iconv",
+            "php8.3-pdo",
+            "php8.3-phar",
+            "php8.3-posix",
+            "php8.3-shmop",
+            "php8.3-sockets",
+            "php8.3-sysvmsg",
+            "php8.3-sysvsem",
+            "php8.3-sysvshm",
+            "php8.3-tokenizer"
+            ]
         },
         "Media": {
           "description": "Media players, editors, and streaming tools for multimedia content.",
@@ -43,7 +77,8 @@
           "packages": [
             "gamemode",
             "libvulkan1",
-            "steam"
+            "steam",
+            "wine"
           ]
         },
         "Python": {
@@ -81,7 +116,10 @@
             "nvme-cli",
             "hdparm",
             "ssh",
-            "hwinfo"
+            "hwinfo",
+            "lm-sensors",
+            "mdadm",
+            "bcache"
           ]
         },
         "Networking Tools": {
