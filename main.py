@@ -190,7 +190,7 @@ class PackageInstallerApp:
     # Package status and command functions.
     # -------------------------------------------------------------------------
     @functools.lru_cache(maxsize=None)
-    def is_package_installed(self, method: str, package: str) -> bool:
+    def is_package_installed(self, method: str, package: str) -> bool | int:
         if method == "APT":
             cmd: str = f"dpkg -s {package} > /dev/null 2>&1"
         elif method == "Snap":
@@ -596,7 +596,7 @@ class PackageInstallerApp:
             elif mode == "category":
                 _, pkg_list = self.get_category_data(self.selected_distro, self.selected_method, self.current_category)
                 # Define the install option and packages, and now define the Back button as a tuple.
-                category_menu: List[Union[str, Tuple[str, Any, str]]] = (
+                category_menu: Sequence[Union[str, Tuple[str, Any, str]]] = (
                     [(self.install_button_text, None, "install")] +
                     [(self.get_package_display_text(pkg), pkg, "package") for pkg in pkg_list] +
                     [(self.back_button_text, None, "back")]
@@ -731,7 +731,7 @@ class PackageInstallerApp:
                                 self.selected_packages.add(pkg_name)
                         else:
                             self.show_temp_message(stdscr, f"{pkg_name} is already installed. Press 'I' for info.")
-            elif k == ord(" "):
+            elif k == ord(" ") or k == ord("\n"):
                 if mode == "packages":
                     current_item = menu_items[current_selection]
                     if isinstance(current_item, tuple) and current_item[2] == "back":
@@ -801,6 +801,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     def signal_handler(sig, frame) -> None:
+        
         print("\nInterrupted! Exiting gracefully...")
         sys.exit(0)
         curses.endwin()
