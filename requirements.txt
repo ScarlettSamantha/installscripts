@@ -1,3 +1,4 @@
 textual
 tqdm
-requests
+request
+typer
