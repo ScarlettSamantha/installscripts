@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import json
 import subprocess
 import curses
 import signal
 import sys
 import functools
+import threading
 from typing import Any, Dict, List, Tuple, Union, Sequence, Optional
 
 # =============================================================================
@@ -41,7 +43,7 @@ class PackageInstallerApp:
     # Default translations (i18n)
     DEFAULT_TRANSLATIONS: Dict[str, str] = {
         "header": "Package Installer",
-        "footer": "scarlett samantha verheul <scarlett.verheul@gmail.com> Scarlettbytes.nl",
+        "footer": "Scarlett Samantha Verheul <scarlett.verheul@gmail.com> https://scarlettbytes.nl",
         "menu_instructions": (
             "[↑/↓: Navigate, →/Enter: Select, ESC/←/B: Back, Space: Toggle selection, i: Install selected, I: Info, R: Uninstall, L: List, Q: Quit]"
         ),
@@ -74,6 +76,48 @@ class PackageInstallerApp:
         self.current_category: str = ""
         self.translations: Dict[str, str] = translations if translations is not None else self.DEFAULT_TRANSLATIONS
         self.last_selected_count: int = 0  # For animating package count
+        
+        self.menu_positions: Dict[str, int] = {
+            "distros": 0,
+            "methods": 0,
+            "packages": 0,
+            "category": 0,
+        }
+        # start warming up the install-status cache in the background
+        self.cache_loading: bool = False
+        self._async_preload_install_status()
+        
+    def _async_preload_install_status(self) -> None:
+        """
+        Launch a daemon thread that walks every (method,package) pair
+        and calls is_package_installed so the lru_cache is populated
+        before the UI needs it.
+        Stores the thread as self._preload_thread.
+        """
+        def _worker() -> None:
+            # build flat list of (method, pkg_name)
+            tasks: list[tuple[str, str]] = []
+            for distro, methods in self.package_data.items():
+                for method, categories in methods.items():
+                    for category in categories:
+                        _, pkg_list = self.get_category_data(distro, method, category)
+                        for pkg in pkg_list:
+                            name = self.get_pkg_name(pkg)
+                            tasks.append((method, name))
+
+            # dispatch on a small thread‐pool
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                futures = [
+                    executor.submit(self.is_package_installed, method, name)
+                    for method, name in tasks
+                ]
+                # wait for all to complete (results go into the cache)
+                for _ in as_completed(futures):
+                    pass
+
+        # start the daemon thread, keep a reference
+        self._preload_thread = threading.Thread(target=_worker, daemon=True)
+        self._preload_thread.start()
 
     # i18n property getters.
     @property
@@ -544,12 +588,11 @@ class PackageInstallerApp:
             stdscr.addstr(self.INFO_ROW, 2, f"Selected Packages: {new} ", curses.A_BOLD | curses.color_pair(1))
             stdscr.refresh()
 
-    # -------------------------------------------------------------------------
-    # Main TUI loop.
-    # -------------------------------------------------------------------------
+
+
     def draw_menu(self, stdscr: curses.window) -> None:
         curses.curs_set(0)
-        curses.set_escdelay(25)  # Adjust this value if ESC key response is not as expected.
+        curses.set_escdelay(25)
         curses.start_color()
         curses.use_default_colors()
         curses.mousemask(curses.ALL_MOUSE_EVENTS | curses.REPORT_MOUSE_POSITION)
@@ -559,65 +602,80 @@ class PackageInstallerApp:
         curses.init_pair(4, curses.COLOR_MAGENTA, -1)
         curses.init_pair(5, curses.COLOR_BLUE, -1)
 
-        current_selection: int = 0
+        stdscr.timeout(200)
+
+        current_selection: int = self.menu_positions.get("distros", 0)
         scroll_offset: int = 0
-        mode: str = "distros"  # Modes: "distros", "methods", "packages", "category"
+        mode: str = "distros"
 
         while True:
             stdscr.clear()
             height, width = stdscr.getmaxyx()
-            max_items: int = height - 10
 
-            stdscr.addstr(self.HEADER_ROW, 2, self.header_text, curses.A_BOLD)
-            stdscr.addstr(self.INFO_ROW, 2, f"Selected Packages: {len(self.selected_packages)}", curses.A_BOLD)
-            stdscr.addstr(2, 40, self.menu_instructions, curses.A_DIM)
+            # ──── CLEAR THE FULL BOTTOM LINE ────
+            stdscr.move(height - 2, 0)
+            stdscr.clrtoeol()
 
-            # Set menu_items based on current mode
+            # ──── IF PRELOAD THREAD STILL RUNNING, SHOW INDICATOR ────
+            if getattr(self, "_preload_thread", None) and self._preload_thread.is_alive():
+                indicator = "🔴 Preloading..."
+                x = max(0, width - len(indicator) - 1)
+                stdscr.addstr(height - 2, x, indicator, curses.A_BOLD)
+
+            # ──── HEADER / INFO / INSTRUCTIONS ────
+            stdscr.addstr(self.HEADER_ROW, 2,    self.header_text,           curses.A_BOLD)
+            stdscr.addstr(self.INFO_ROW,   2,    f"Selected Packages: {len(self.selected_packages)}", curses.A_BOLD)
+            stdscr.addstr(2,             40,    self.menu_instructions,     curses.A_DIM)
+
+            # ──── BUILD menu_items BASED ON mode ────
             if mode == "distros":
-                distro_menu: List[str] = list(self.package_data.keys())
+                distro_menu = list(self.package_data.keys())
                 menu_items: Sequence[Union[str, Tuple[str, Any, str]]] = distro_menu
                 stdscr.addstr(4, 2, self.select_distro_text, curses.A_UNDERLINE)
+
             elif mode == "methods":
-                methods_menu: List[str] = list(self.package_data[self.selected_distro].keys()) + [self.back_button_text]
-                menu_items: Sequence[Union[str, Tuple[str, Any, str]]] = methods_menu
+                methods_menu = list(self.package_data[self.selected_distro].keys()) + [self.back_button_text]
+                menu_items = methods_menu
                 stdscr.addstr(4, 2, f"Distro: {self.selected_distro}", curses.A_BOLD)
                 stdscr.addstr(5, 2, self.select_method_text, curses.A_UNDERLINE)
+
             elif mode == "packages":
                 categories = self.package_data[self.selected_distro][self.selected_method]
-                packages_menu: List[Tuple[str, str, str]] = [
+                packages_menu = [
                     (self.get_category_display_text(self.selected_distro, self.selected_method, cat), cat, "category")
                     for cat in categories.keys()
-                ]
-                # Back button as a tuple with type "back"
-                packages_menu.append((self.back_button_text, "", "back"))
-                menu_items: Sequence[Union[str, Tuple[str, Any, str]]] = packages_menu
+                ] + [(self.back_button_text, "", "back")]
+                menu_items = packages_menu
                 stdscr.addstr(4, 2, f"Distro: {self.selected_distro} | Method: {self.selected_method}", curses.A_BOLD)
                 stdscr.addstr(5, 2, self.select_category_text, curses.A_UNDERLINE)
-            elif mode == "category":
+
+            else:  # mode == "category"
                 _, pkg_list = self.get_category_data(self.selected_distro, self.selected_method, self.current_category)
-                # Define the install option and packages, and now define the Back button as a tuple.
                 category_menu: Sequence[Union[str, Tuple[str, Any, str]]] = (
                     [(self.install_button_text, None, "install")] +
                     [(self.get_package_display_text(pkg), pkg, "package") for pkg in pkg_list] +
                     [(self.back_button_text, None, "back")]
                 )
-                menu_items: Sequence[Union[str, Tuple[str, Any, str]]] = category_menu
+                menu_items = category_menu
                 stdscr.addstr(4, 2, f"Category: {self.current_category} | Packages: {len(pkg_list)}", curses.A_BOLD)
                 stdscr.addstr(5, 2, self.select_package_text, curses.A_UNDERLINE)
 
+            # ──── FOOTER ────
             stdscr.addstr(height - 1, 2, self.footer_text, curses.A_DIM)
+
+            stdscr.refresh()
+
+            # ──── HANDLE SCROLLING AND DRAW ITEMS ────
+            max_items = height - self.MENU_START_ROW - 2
+            if current_selection < scroll_offset:
+                scroll_offset = current_selection
+            elif current_selection >= scroll_offset + max_items:
+                scroll_offset = current_selection - max_items + 1
 
             if len(menu_items) > max_items:
                 visible = min(len(menu_items) - scroll_offset, max_items)
                 scroll_info = f"Showing {scroll_offset+1}-{scroll_offset+visible} of {len(menu_items)}"
                 stdscr.addstr(self.MENU_START_ROW + visible, 4, scroll_info, curses.A_DIM)
-
-            if current_selection >= len(menu_items):
-                current_selection = len(menu_items) - 1
-            if current_selection < scroll_offset:
-                scroll_offset = current_selection
-            elif current_selection >= scroll_offset + max_items:
-                scroll_offset = current_selection - max_items + 1
 
             for idx in range(scroll_offset, min(len(menu_items), scroll_offset + max_items)):
                 item = menu_items[idx]
@@ -671,18 +729,40 @@ class PackageInstallerApp:
                         continue
 
             if k == ord("q"):
-                self.nice_exit_popup(stdscr)
-                break
+                # tally installed vs total
+                methods = self.package_data.get(self.selected_distro, {})
+                cats = methods.get(self.selected_method, {})
+                total = sum(
+                    len(self.get_category_data(self.selected_distro, self.selected_method, cat)[1])
+                    for cat in cats
+                )
+                installed = sum(
+                    1
+                    for cat in cats
+                    for pkg in self.get_category_data(self.selected_distro, self.selected_method, cat)[1]
+                    if self.is_package_installed(self.selected_method, self.get_pkg_name(pkg))
+                )
+                # single-line prompt (no '\n')
+                prompt = f"{installed}/{total} packages installed. Exit and clear screen?"
+                if self.confirm_action(stdscr, prompt):
+                    self.nice_exit_popup(stdscr)
+                    break
+                else:
+                    # user said No, go back into the menu
+                    continue
             elif k == ord("l") or k == ord("L"):
                 self.list_installed_packages(stdscr)
             elif k in (self.key_escape, curses.KEY_LEFT, ord("b"), ord("B")):
-                if mode == "methods":
-                    mode = "distros"
-                elif mode == "packages":
-                    mode = "methods"
-                elif mode == "category":
-                    mode = "packages"
-                current_selection = 0
+                if k in (self.key_escape, curses.KEY_LEFT, ord("b"), ord("B")):
+                    self.menu_positions[mode] = current_selection
+                    if mode == "methods":
+                        mode = "distros"
+                    elif mode == "packages":
+                        mode = "methods"
+                    elif mode == "category":
+                        mode = "packages"
+                # restore last cursor for new mode
+                current_selection = self.menu_positions.get(mode, 0)
                 scroll_offset = 0
             elif k == curses.KEY_UP:
                 current_selection = (current_selection - 1) % len(menu_items)
@@ -782,13 +862,17 @@ class PackageInstallerApp:
         try:
             curses.wrapper(self.draw_menu)
         except curses.error:
+            print("Curses error: Unable to initialize curses.")
             try:
                 curses.endwin()
             except Exception:
-                pass  # Prevent errors if curses is already terminated
+                print("Curses error: Unable to end window.")
             finally:
                 print("\033[H\033[J", end="")  # Clear terminal
                 print("\033[H\033[0J")  # Move cursor to the bottom
+                print("Installed packages:")
+                for package in self.selected_packages:
+                    print(f"  ✅ {package}")
                 print("Finished installing packages, have a nice day!")
                 os._exit(0)
 
