@@ -50,6 +50,8 @@
           "buildah",
           "skopeo",
           "docker-compose",
+          "docker.io",
+          "kubernetes-cli",
           "kubectl",
           "minikube",
           "helm"
@@ -184,6 +186,35 @@
           "python3-sqlalchemy"
         ]
       },
+      "PHP": {
+        "description": "PHP interpreter and development libraries for PHP development from ondrej repository.",
+        "requires": {
+          "command": "export DEBIAN_FRONTEND=noninteractive && sudo apt update && sudo apt install -y software-properties-common && sudo add-apt-repository -y ppa:ondrej/php && sudo apt update"
+        },
+        "packages": [
+          "php8.4-bcmath",
+          "php8.4-cli",
+          "php8.4-common",
+          "php8.4-curl",
+          "php8.4-fpm",
+          "php8.4-gd",
+          "php8.4-igbinary",
+          "php8.4-mbstring",
+          "php8.4-memcached",
+          "php8.4-msgpack",
+          "php8.4-mysql",
+          "php8.4-opcache",
+          "php8.4-pcov",
+          "php8.4-psr",
+          "php8.4-readline",
+          "php8.4-redis",
+          "php8.4-sqlite3",
+          "php8.4-xdebug",
+          "php8.4-xml",
+          "php8.4-zip",
+          "php8.4"
+        ]
+      },
       "Development Tools": {
         "description": "Essential compilers, debuggers, and build tools for development.",
         "packages": ["build-essential", "clang", "cmake", "dkms"]
@@ -265,7 +296,8 @@
           "org.gnome.Weather",
           "org.gnome.Photos",
           "com.obsproject.Studio",
-          "com.bambulab.BambuStudio"
+          "com.bambulab.BambuStudio",
+          "io.dbeaver.DBeaverCommunity"
         ]
       }
     },
@@ -318,6 +350,41 @@
           "url": "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh",
           "install_command": "bash Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda3 && rm Miniconda3-latest-Linux-x86_64.sh",
           "description": "Miniconda installer for the conda package manager."
+        },
+        {
+          "name": "PHP - Composer",
+          "url": "https://getcomposer.org/download/latest-stable/composer.phar",
+          "check_command": "composer --version",
+          "install_command": "php composer.phar install --no-dev && mv composer.phar /usr/local/bin/composer",
+          "description": "Dependency manager for PHP, allowing you to manage libraries and packages."
+        },
+        {
+          "name": "PHP - Stan",
+          "url": "https://github.com/phpstan/phpstan/releases/download/2.1.17/phpstan.phar",
+          "check_command": "phpstan --version",
+          "install_command": "php phpstan.phar install --no-dev && mv phpstan.phar /usr/local/bin/phpstan",
+          "description": "Static analysis tool for PHP, helping to find bugs and improve code quality."
+        },
+        {
+          "name": "PHP - MD",
+          "url": "https://phpmd.org/static/latest/phpmd.phar",
+          "check_command": "phpmd --version",
+          "install_command": "php phpmd.phar install --no-dev && mv phpmd.phar /usr/local/bin/phpmd",
+          "description": "PHP Mess Detector, a tool for detecting potential problems in PHP code."
+        },
+        {
+          "name": "PHP - CS",
+          "url": "https://phars.phpcodesniffer.com/phpcs.phar",
+          "check_command": "phpcs --version",
+          "install_command": "php phpcs.phar install --no-dev && mv phpcs.phar /usr/local/bin/phpcs",
+          "description": "PHP Code Sniffer, a tool for detecting violations of a defined coding standard in PHP code."
+        },
+        {
+          "name": "PHP - CS Fixer",
+          "url": "https://phars.phpcodesniffer.com/phpcbf.phar",
+          "check_command": "php phpcbf --version",
+          "install_command": "php phpcbf.phar install --no-dev && mv phpcbf.phar /usr/local/bin/phpcbf",
+          "description": "PHP Code Beautifier and Fixer, a tool for automatically fixing coding standard violations in PHP code."
         }
       ]
     }
